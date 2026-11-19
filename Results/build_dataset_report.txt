@@ -1,0 +1,55 @@
+NOTE: specimen E0-1     is outside the fit -- N unclear/incomplete (e.g. the '750,97' censored bound of E0-1; n=29 per the source table).
+rho_A/rho_me (zero-intercept, n=24) = 1.8736 ; ratio range 1.58..2.51 ; config RHO_A_FACTOR = 1.8736
+
+========================================================================
+Liu S-N fit (from our own Table 4 data):  n=29  R^2=0.969  sigma=0.092  LOO-sigma=0.121 (log10)
+spec      rho_A%   S(MPa)      exp N        fit N log10 err
+E0-2        0.00   203.87     143796       125685     -0.06
+E0-3        0.00   134.87    1155343       980389     -0.07
+E0-4        0.00   175.64     188602       263695     +0.15
+E0-5        0.00   156.83     357143       463108     +0.11
+E0-6        0.00   150.55     664011       567443     -0.07
+E5-1       13.69   178.78     204188       163055     -0.10
+E5-2       14.42   150.55     401693       418652     +0.02
+E5-3       13.89   141.14     581527       606217     +0.02
+E5-4       13.56   207.01      75862        72373     -0.02
+E5-5       18.38   250.92      30990        20557     -0.18
+E5-6       16.80   163.10     286918       253688     -0.05
+E10-1      17.21   141.14     552761       574091     +0.02
+E10-2      18.31   181.92     115525       131030     +0.05
+E10-3      17.54   163.10     311635       249650     -0.10
+E10-4      18.23   219.56      31259        44540     +0.15
+E10-5      17.57   147.42     450188       444917     -0.01
+E10-6      28.37   203.87      46931        51347     +0.04
+E15-1      28.29   191.33      82001        75856     -0.03
+E15-2      30.75   207.01      37272        43948     +0.07
+E15-3      27.25   178.78     116970       117481     +0.00
+E15-4      29.11   163.10     216830       198314     -0.04
+E15-5      41.13   219.56      28880        23451     -0.09
+E15-6      34.63   203.87      44804        43957     -0.01
+E20-1      33.13   147.42     282311       348322     +0.09
+E20-2      31.36   219.56      20046        30010     +0.18
+E20-3      34.23   172.51     139861       127291     -0.04
+E20-4      34.00   181.92     101765        91473     -0.05
+E20-5      39.72   141.14     478572       423791     -0.05
+E20-6      36.20   156.83     195232       225355     +0.06
+Comparison: using the published Eq.5 coefficients directly gives median|log10 err| = 2.27, worst = 12.00
+========================================================================
+Maximum depth of the FEM grid = 2.00 mm  (rho_A ~ 37.5%)
+WARNING: DATA GAP: Table 4 has no specimen between rho_A=0.0% and 13.6% (13.6 pp); that part of the grid (depth ~ 0.00..0.72 mm) is interpolated, relying on the quadratic shape of the law.
+GATE PASSED (sigma=0.09 <= 0.50).  rho_A factor = 1.8736
+Created: Results\training_dataset.csv (126 entries, 0 excluded at the HCF floor), noise sigma=0.092 (log10)
+
+========================================================================
+FEA VERIFICATION (n=126 jobs)
+  gauge-mean / applied stress : 1.0000 .. 1.0000   (analytical sigma=F/A = 1.0000)
+  gauge-max  / applied stress : 1.0011 .. 1.0011   (max deviation 0.11% -- grip/Poisson edge effect)
+  => verifies the FEA stress state (uniform uniaxial). The stress does not depend on depth;
+     the corrosion effect enters only through rho_A in the S-N law. Present the FEA as a
+     verification, not as a source of new information.
+  MESH STUDY (fem_mesh_study.csv):
+  depth=0.0000 S=350.0000 : h=2.00 max=350.176 mean=350.000 | h=1.00 max=350.389 mean=350.000 | h=0.50 max=350.449 mean=350.000   d(mean, finest two)=0.0000%
+  depth=1.0000 S=350.0000 : h=2.00 max=350.178 mean=350.000 | h=1.00 max=350.384 mean=350.000 | h=0.50 max=350.445 mean=350.000   d(mean, finest two)=0.0000%
+  depth=2.0000 S=350.0000 : h=2.00 max=350.173 mean=350.000 | h=1.00 max=350.385 mean=350.000 | h=0.50 max=350.443 mean=350.000   d(mean, finest two)=0.0000%
+========================================================================
+Next step: python 3_train_models.py  (training) or python 4_reanalysis.py  (independent)

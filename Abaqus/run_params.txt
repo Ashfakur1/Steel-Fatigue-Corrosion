@@ -1,0 +1,4 @@
+2.0
+430
+job_c2p0_s430
+E:\Ashfakur\MSC\Thesis\Steel Fatigue PINN\Codes\Results\fem_results_raw.csv

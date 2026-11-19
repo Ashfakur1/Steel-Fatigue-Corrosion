@@ -1,0 +1,7 @@
+kind,family,arm,metric,model,basis,steels,n,n_censored,slope_m,slope_ci_halfwidth,sigma,logo_rmse,logo_ci_lo,logo_ci_hi,ci_halfwidth_ratio,slope_shift
+dup_inflation,Razmkhah2023 S460-10mm,cleaned,,none,"native (amplitude, R=-1.00)",Razmkhah2023 S235-10mm;Razmkhah2023 S355-10mm;Razmkhah2023 S235-8mm;Razmkhah2023 S235-12mm;Razmkhah2023 S235-15mm;Razmkhah2023 S235-20mm,59,13,3.5688,1.5373,0.7155,1.0092,0.8335,1.1624,,
+dup_inflation,Razmkhah2023 S460-10mm,uncleaned,,none,"native (amplitude, R=-1.00)",Razmkhah2023 S235-10mm;Razmkhah2023 S355-10mm;Razmkhah2023 S460-10mm;Razmkhah2023 S690-10mm;Razmkhah2023 S235-8mm;Razmkhah2023 S235-12mm;Razmkhah2023 S235-15mm;Razmkhah2023 S235-20mm,86,18,1.972,1.0098,0.7548,0.7118,0.5919,0.8266,,
+dup_inflation_factor,Razmkhah2023 S460-10mm,,,none,,,,,,,,,,,0.657,-1.5968
+dup_inflation,Xue2020 HSW-Xue,cleaned,m_mass_loss,parallel_lin,"native (range, R=0.40)",Jiang2018 HSW-Jiang,19,0,2.3508,1.1294,0.1522,0.2075,0.0988,0.3151,,
+dup_inflation,Xue2020 HSW-Xue,uncleaned,m_mass_loss,parallel_lin,"native (range, R=0.40)",Jiang2018 HSW-Jiang;Xue2020 HSW-Xue,41,0,2.6791,0.5834,0.117,0.136,0.0624,0.2146,,
+dup_inflation_factor,Xue2020 HSW-Xue,,m_mass_loss,parallel_lin,,,,,,,,,,,0.517,0.3283

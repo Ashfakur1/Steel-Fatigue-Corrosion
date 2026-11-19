@@ -1,0 +1,35 @@
+kind,metric,normaliser,held_out,n,rmse,bias,within_x2,ci_lo,ci_hi,within_study_logo,inflation_x
+study_transfer,m_rho_A,raw,Liu2021 Q460D,30,0.5846,0.5482,0.1,,,,
+study_transfer,m_rho_A,raw,Liu2021 Q550E,29,1.0703,-1.0387,0.0,,,,
+study_transfer_pooled,m_rho_A,raw,POOLED,59,0.8584,-0.2318,,0.7673,0.9478,0.3047,2.82
+study_transfer,m_rho_A,f_u,Liu2021 Q460D,30,0.21,0.0528,0.833,,,,
+study_transfer,m_rho_A,f_u,Liu2021 Q550E,29,0.3602,-0.2513,0.586,,,,
+study_transfer_pooled,m_rho_A,f_u,POOLED,59,0.2936,-0.0967,,0.2343,0.351,0.16,1.84
+study_transfer,m_rho_me,raw,Liu2021 Q460D,30,0.5977,0.5681,0.067,,,,
+study_transfer,m_rho_me,raw,Liu2021 Q550E,29,1.0383,-1.0107,0.0,,,,
+study_transfer_pooled,m_rho_me,raw,POOLED,59,0.8435,-0.2079,,0.7604,0.9262,0.3032,2.78
+study_transfer,m_rho_me,f_u,Liu2021 Q460D,30,0.1946,0.0576,0.867,,,,
+study_transfer,m_rho_me,f_u,Liu2021 Q550E,29,0.3355,-0.2369,0.586,,,,
+study_transfer_pooled,m_rho_me,f_u,POOLED,59,0.2731,-0.0872,,0.2179,0.3274,0.1526,1.79
+study_transfer,m_mass_loss,raw,Liu2021 Q460D,30,0.5484,0.2523,0.467,,,,
+study_transfer,m_mass_loss,raw,Liu2021 Q550E,29,0.5406,0.406,0.448,,,,
+study_transfer,m_mass_loss,raw,Jiang2018 HSW-Jiang,19,0.1767,-0.0422,0.947,,,,
+study_transfer,m_mass_loss,raw,Lan2018 HSW-Lan,99,0.5429,0.1009,0.323,,,,
+study_transfer,m_mass_loss,raw,Liu2017 HSW-III,24,0.5108,0.4884,0.125,,,,
+study_transfer,m_mass_loss,raw,Guo2021 Q690D-weld,38,0.4107,0.3,0.526,,,,
+study_transfer,m_mass_loss,raw,Zhou2024 Q420,22,0.0794,0.0213,1.0,,,,
+study_transfer,m_mass_loss,raw,Deng2022 HSW-Deng,105,0.5488,-0.5215,0.114,,,,
+study_transfer,m_mass_loss,raw,Yang2026 HSW-Yang,15,0.2773,-0.0282,0.8,,,,
+study_transfer,m_mass_loss,raw,Xu2013 Q235-8mm,23,0.519,0.3645,0.304,,,,
+study_transfer_pooled,m_mass_loss,raw,POOLED,404,0.4952,0.0132,,0.4702,0.519,0.4408,1.12
+study_transfer,m_mass_loss,f_u,Liu2021 Q460D,30,0.5834,-0.381,0.367,,,,
+study_transfer,m_mass_loss,f_u,Liu2021 Q550E,29,0.3358,-0.1626,0.483,,,,
+study_transfer,m_mass_loss,f_u,Jiang2018 HSW-Jiang,19,0.5914,0.5479,0.0,,,,
+study_transfer,m_mass_loss,f_u,Lan2018 HSW-Lan,99,0.5828,0.3917,0.333,,,,
+study_transfer,m_mass_loss,f_u,Liu2017 HSW-III,24,0.7986,0.7862,0.0,,,,
+study_transfer,m_mass_loss,f_u,Guo2021 Q690D-weld,38,0.2376,-0.0285,0.842,,,,
+study_transfer,m_mass_loss,f_u,Zhou2024 Q420,22,0.8633,-0.86,0.0,,,,
+study_transfer,m_mass_loss,f_u,Deng2022 HSW-Deng,105,0.1438,-0.1061,0.99,,,,
+study_transfer,m_mass_loss,f_u,Yang2026 HSW-Yang,15,0.6934,0.6124,0.2,,,,
+study_transfer,m_mass_loss,f_u,Xu2013 Q235-8mm,23,0.7057,-0.5994,0.217,,,,
+study_transfer_pooled,m_mass_loss,f_u,POOLED,404,0.5181,0.04,,0.4864,0.5512,0.4558,1.14

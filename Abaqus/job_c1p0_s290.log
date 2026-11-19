@@ -1,0 +1,22 @@
+Analysis initiated from SIMULIA established products
+Abaqus JOB job_c1p0_s290
+Abaqus 2023
+Abaqus License Manager checked out the following licenses:
+Abaqus/Standard checked out 5 tokens from Flexnet server localhost.
+<9994 out of 9999 licenses remain available>.
+Begin Analysis Input File Processor
+11/16/2026 10:31:59 AM
+Run pre.exe
+11/16/2026 10:32:02 AM
+End Analysis Input File Processor
+Begin Abaqus/Standard Analysis
+11/16/2026 10:32:02 AM
+Run standard.exe
+11/16/2026 10:32:10 AM
+End Abaqus/Standard Analysis
+Begin SIM Wrap-up
+11/16/2026 10:32:11 AM
+Run SMASimUtility.exe
+11/16/2026 10:32:11 AM
+End SIM Wrap-up
+Abaqus JOB job_c1p0_s290 COMPLETED

@@ -1,0 +1,39 @@
+dataset,steel,metric,model,variant,n,sigma,loo,logo_rmse,slope_m
+Liu2021,Q460D,m_rho_A,full_quad,base (runout = censored Tobit),30,0.0536,0.061,0.0509,8.018
+Liu2021,Q460D,m_rho_A,full_quad,exclude note 'a',26,0.0569,0.0645,0.0596,7.993
+Liu2021,Q460D,m_rho_A,full_quad,exclude note 'b',25,0.0571,0.0625,0.0558,8.033
+Liu2021,Q460D,m_rho_A,full_quad,exclude all note-coded,21,0.062,0.0685,0.0723,8.003
+Liu2021,Q460D,m_rho_me,full_quad,base (runout = censored Tobit),30,0.0517,0.0568,0.0568,8.079
+Liu2021,Q460D,m_rho_me,full_quad,exclude note 'a',26,0.0542,0.0592,0.073,8.02
+Liu2021,Q460D,m_rho_me,full_quad,exclude note 'b',25,0.0571,0.0653,0.0685,8.061
+Liu2021,Q460D,m_rho_me,full_quad,exclude all note-coded,21,0.0615,0.0696,0.0843,8.013
+Liu2021,Q550E,m_rho_A,parallel_lin,base (runout = censored Tobit),29,0.0931,0.1028,0.1047,5.841
+Liu2021,Q550E,m_rho_A,parallel_lin,exclude note 'a',24,0.0974,0.1082,0.1115,5.732
+Liu2021,Q550E,m_rho_A,parallel_lin,exclude note 'b',28,0.0846,0.0935,0.0877,6.121
+Liu2021,Q550E,m_rho_A,parallel_lin,exclude all note-coded,23,0.089,0.1007,0.0922,6.08
+Liu2021,Q550E,m_rho_A,parallel_lin,include all (ignore exclude_reason),30,0.0918,0.0997,0.1003,5.801
+Liu2021,Q550E,m_rho_A,parallel_lin,ambiguous record INCLUDED (censored lower bound),30,0.0941,0.1015,0.1026,5.757
+Liu2021,Q550E,m_rho_me,slope_lin,base (runout = censored Tobit),29,0.0848,0.0949,0.0938,4.919
+Liu2021,Q550E,m_rho_me,slope_lin,exclude note 'a',24,0.0857,0.1003,0.117,4.744
+Liu2021,Q550E,m_rho_me,slope_lin,exclude note 'b',28,0.0809,0.0927,0.0813,5.311
+Liu2021,Q550E,m_rho_me,slope_lin,exclude all note-coded,23,0.0804,0.0965,0.098,5.135
+Liu2021,Q550E,m_rho_me,slope_lin,include all (ignore exclude_reason),30,0.0836,0.0915,0.0904,5.031
+Liu2021,Q550E,m_rho_me,slope_lin,ambiguous record INCLUDED (censored lower bound),30,0.0845,0.0932,0.0901,4.827
+Jiang2018,HSW-Jiang,m_mass_loss,parallel_lin,base (runout = censored Tobit),18,0.0418,0.0452,0.0488,2.814
+Jiang2018,HSW-Jiang,m_mass_loss,parallel_lin,INCLUDE lower branch (points below the knee),26,0.1466,0.1221,0.1267,3.897
+Jiang2018,HSW-Jiang,m_pit_depth_pct,parallel_lin,base (runout = censored Tobit),18,0.0466,0.0504,0.0506,2.9
+Jiang2018,HSW-Jiang,m_pit_depth_pct,parallel_lin,INCLUDE lower branch (points below the knee),26,0.137,0.1142,0.112,3.702
+Lan2018,HSW-Lan,m_mass_loss,slope_lin,base (runout = censored Tobit),99,0.0835,0.0853,0.1181,6.817
+Liu2017,HSW-III,m_mass_loss,parallel_lin,base (runout = censored Tobit),24,0.1478,0.1567,0.1404,2.555
+Guo2021,Q690D-weld,m_mass_loss,none,base (runout = censored Tobit),42,0.2424,0.2386,0.2474,2.972
+Guo2021,Q690D-weld,m_mass_loss,none,exclude note 'x',36,0.1982,0.1965,0.233,3.162
+Guo2021,Q690D-weld,m_mass_loss,none,exclude note 'y',40,0.247,0.2431,0.2521,2.98
+Guo2021,Q690D-weld,m_mass_loss,none,exclude all note-coded,34,0.2016,0.2001,0.2392,3.185
+Guo2021,Q690D-weld,m_mass_loss,none,DROP runouts (naive),38,0.2305,0.2356,0.2391,2.585
+Zhou2024,Q420,m_mass_loss,parallel_lin,base (runout = censored Tobit),25,0.0664,0.0559,0.0707,3.507
+Zhou2024,Q420,m_mass_loss,parallel_lin,exclude note 'runout: table prints 'Over 2x10^7' but text twice states loading halted at 2 million cycles intact (0-5/20-5/40-5 'had not yet broken'); recorded N=2e6',22,0.0416,0.0455,0.0583,2.378
+Deng2022,HSW-Deng,m_mass_loss,slope_lin,base (runout = censored Tobit),105,0.0873,0.088,0.0916,2.582
+Deng2022,HSW-Deng,m_mass_loss,slope_lin,include all (ignore exclude_reason),120,0.0915,0.0925,0.0989,2.638
+Li2021,HSW-Li5,m_pit_depth_pct,none,base (runout = censored Tobit),84,0.1356,0.1374,0.1443,2.867
+Li2021,HSW-Li5,m_pit_depth_pct,none,"exclude note 'value identical to Pit-I-1m 196 c-specimen (175,323); possible typo in Table 5 - kept as printed'",83,0.133,0.1347,0.1409,2.819
+Xu2013,Q235-8mm,m_mass_loss,full_quad,base (runout = censored Tobit),23,0.3281,5.8868,2.8846,612.905

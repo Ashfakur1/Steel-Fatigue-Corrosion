@@ -1,0 +1,6 @@
+2.0
+350
+mesh_c2p0_s350_m0p5
+0.5
+E:\Ashfakur\MSC\Thesis\Steel Fatigue PINN\Codes\Results
+1
