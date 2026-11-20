@@ -792,6 +792,8 @@ def run_real_validation(table_rows, fem, n_seeds, epochs):
     the dataset -> train the ANN and the PINN -> predict N of the held-out group's real specimens.
     The held-out specimens are never seen in any step. Only specimens inside the model input
     domain (in-domain) can be predicted by the model.
+    [rev3] Fourth predictor added: a tuned plain network trained DIRECTLY on the fold's real
+    specimens (no parametric law, no synthetic grid) -- the physics-free data-driven baseline.
     Reported per pooled model: RMSE, the within-x2 / within-x3 proportions with Wilson 95% CIs,
     and the per-seed spread (mean +/- s.d. of the pooled RMSE across seeds)."""
     _, lm, lp, tn = cfg_of(FINAL_CONFIG)
@@ -799,7 +801,8 @@ def run_real_validation(table_rows, fem, n_seeds, epochs):
     group = lambda r: r['specimen'].split('-')[0]
     groups = sorted(set(group(r) for r in table_rows), key=lambda g: float(g.lstrip('ED')))
     out, t0 = [], time.time()
-    seed_errs = {'ann': [[] for _ in range(n_seeds)], 'pinn': [[] for _ in range(n_seeds)]}
+    seed_errs = {'ann': [[] for _ in range(n_seeds)], 'pinn': [[] for _ in range(n_seeds)],
+                 'ann_real': [[] for _ in range(n_seeds)]}
     for g in groups:
         held = [r for r in table_rows if group(r) == g]
         rest = [r for r in table_rows if group(r) != g]
@@ -835,9 +838,23 @@ def run_real_validation(table_rows, fem, n_seeds, epochs):
                 seed_errs['pinn'][s_i] += list(np.asarray(pv) - logN[mask])
             for s_i, av in enumerate(aa):
                 seed_errs['ann'][s_i] += list(np.asarray(av) - logN[mask])
+        # [rev3] fourth predictor: tuned plain network trained DIRECTLY on the fold's real
+        # specimens (no parametric law, no synthetic grid) -- the physics-free baseline.
+        Xr_rest = np.column_stack([bd.depth_from_rho_A(np.array([r['rho'] for r in rest])),
+                                   bd.peak_stress_from_equivalent_amplitude(np.array([r['S'] for r in rest]))])
+        yr_rest = np.log10([r['N'] for r in rest])
+        ann_real_p = np.full(len(held), np.nan)
+        pr = []
+        for seed in range(n_seeds):
+            net_r, sc_r = train_one(Xr_rest, yr_rest, 0.0, 0.0, seed, None, 0.0, 1.0, epochs, tuned=bl[3])
+            pr.append(predict(net_r, sc_r, Xr))
+        ann_real_p[:] = np.mean(pr, axis=0)
+        for s_i, pv in enumerate(pr):
+            seed_errs['ann_real'][s_i] += list(np.asarray(pv)[mask] - logN[mask])
         for i, r in enumerate(held):
             out.append(dict(fold=g, specimen=r['specimen'], rho_A_pct=r['rho'], S_a_mpa=r['S'], log10N_real=float(logN[i]),
-                            in_domain=int(mask[i]), law_pred=float(law_pred[i]), pinn_pred=float(pinn_p[i]), ann_pred=float(ann_p[i])))
+                            in_domain=int(mask[i]), law_pred=float(law_pred[i]), pinn_pred=float(pinn_p[i]), ann_pred=float(ann_p[i]),
+                            ann_real_pred=float(ann_real_p[i])))
         print("  [realval] fold %-4s: %d specimen, %d in-domain (%.0fs)" % (g, len(held), int(mask.sum()), time.time() - t0))
 
     def stats(pred, real):
@@ -862,7 +879,7 @@ def run_real_validation(table_rows, fem, n_seeds, epochs):
     if ind:
         real = [o['log10N_real'] for o in ind]
         print("\nPOOLED in-domain results (n=%d; error = predicted - observed, log10 N):" % len(ind))
-        for label, key in (("S-N law only", 'law_pred'), ("ANN (tuned)", 'ann_pred'), ("PINN", 'pinn_pred')):
+        for label, key in (("S-N law only", 'law_pred'), ("ANN (tuned)", 'ann_pred'), ("PINN", 'pinn_pred'), ("ANN on real specimens (tuned)", 'ann_real_pred')):
             r, w2, w3 = stats([o[key] for o in ind], real)
             k2 = int(round(w2 * len(ind))); k3 = int(round(w3 * len(ind)))
             lo2, hi2 = wilson(k2, len(ind)); lo3, hi3 = wilson(k3, len(ind))
@@ -873,9 +890,9 @@ def run_real_validation(table_rows, fem, n_seeds, epochs):
             def _per_seed(key):
                 vals = [math.sqrt(float((np.asarray(e) ** 2).mean())) for e in seed_errs[key] if len(e)]
                 return (float(np.mean(vals)), float(np.std(vals))) if vals else (float('nan'), float('nan'))
-            ma, sa = _per_seed('ann'); mp, sp = _per_seed('pinn')
+            ma, sa = _per_seed('ann'); mp, sp = _per_seed('pinn'); mr, sr = _per_seed('ann_real')
             print("  seed spread (pooled in-domain RMSE, mean +/- s.d. over %d seeds):"
-                  " ANN %.3f +/- %.3f | PINN %.3f +/- %.3f" % (n_seeds, ma, sa, mp, sp))
+                  " ANN %.3f +/- %.3f | PINN %.3f +/- %.3f | ANN-real %.3f +/- %.3f" % (n_seeds, ma, sa, mp, sp, mr, sr))
             print("  (the predictions above and in the CSV are the per-specimen means over these %d seeds)" % n_seeds)
     print("Limitation: the specimens' rho_A is pit-caused; the model maps depth = rho_A / factor (Q3). Only in-domain specimens are evaluated.")
     print("=" * 100)

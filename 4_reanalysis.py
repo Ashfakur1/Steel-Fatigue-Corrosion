@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-4_reanalysis.py   (formerly reanalysis.py, v3 -- final; pipeline step 4)
+4_reanalysis.py   (formerly reanalysis.py; v4 -- pipeline step 4, now including the
+                   round-3 revision extras formerly in the separate 5_revision_extras.py,
+                   so that the whole re-analysis lives in one script)
 ============================
 Config-driven, dataset-agnostic reanalysis of corrosion-fatigue S-N data (all real data, not synthetic).
 
@@ -24,6 +26,11 @@ What it does:
   7. Sensitivity: note-coded / exclude_reason / ambiguous-N / lower-branch / runout exclusions --
      how much the results change.
   8. REPLICATION MATRIX: whether claims (i)(ii)(v) hold on every dataset, in one table.
+  9. ROUND-3 REVISION EXTRAS (formerly the separate 5_revision_extras.py, merged here so the
+     whole pipeline lives in the four numbered scripts): matched study-vs-series transfer
+     ratios, series-stratified and joint-fold duplication audits, the three readings of the
+     ambiguous "750,97" record, and the 29-specimen aggregate of the refitted law
+     -> Results/revision_extras.csv.
 
 Run:
     python 4_reanalysis.py                     # full analysis (CSV -> Results/, figures -> Figures/)
@@ -1558,6 +1565,10 @@ def summary_figures(subs, mcols):
     nrow = int(math.ceil(n / float(ncol)))
     sf = ScalarFormatter()
     sf.set_powerlimits((-1, 7))
+    # [rev3] plain integer tick labels on the log axis: fixes the duplicated "100000"
+    # tick label (ScalarFormatter rounding on log axes) flagged in review round 3.
+    from matplotlib.ticker import FuncFormatter
+    int_fmt = FuncFormatter(lambda v, _p: '%d' % round(v) if v >= 1 else '')
 
     # ---------------- fig_sn_fits: S-N fit for the 9 systems ----------------
     fig, axs = plt.subplots(nrow, ncol, figsize=(10.4, 3.1 * nrow), squeeze=False)
@@ -1572,8 +1583,9 @@ def summary_figures(subs, mcols):
         norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
         cmap = plt.get_cmap('viridis')
         model = f['model']
-        if model != 'none':
-            ffull = fit_any(design(model, m, x), y, w, c)
+        # [rev3] fit the selected model whatever it is, so panels whose selected family is
+        # the no-corrosion baseline (Guo 2021 weld, Li 2021 bridge wire) also show their curve.
+        ffull = fit_any(design(model, m, x), y, w, c)
         for grp in sorted(set(g)):
             sel = g == grp
             col = cmap(norm(gmean[grp]))
@@ -1585,8 +1597,13 @@ def summary_figures(subs, mcols):
                 xs = np.linspace(x.min(), x.max(), 30)
                 Xd = design(model, np.full_like(xs, m[sel].mean()), xs)
                 ax.plot(10 ** xs, 10 ** (Xd @ ffull['coef']), lw=1.0, color=col, zorder=2)
+        if model == 'none':
+            # single no-corrosion baseline curve (one line, neutral colour)
+            xs = np.linspace(x.min(), x.max(), 60)
+            Xd = design('none', np.zeros_like(xs), xs)
+            ax.plot(10 ** xs, 10 ** (Xd @ ffull['coef']), lw=1.0, color='0.35', zorder=2)
         ax.set_yscale('log')
-        ax.yaxis.set_major_formatter(sf)
+        ax.yaxis.set_major_formatter(int_fmt)
         ax.yaxis.set_minor_formatter(NullFormatter())
         ax.set_xlabel(XLBL.get(f['stress_def'], 'Stress (MPa, native)'))
         if pi % ncol == 0:
@@ -1668,6 +1685,253 @@ def write_csv(path, rows):
         w = csv.DictWriter(fh, fieldnames=keys)
         w.writeheader(); w.writerows(rows)
     print("Saved: %s" % path)
+
+
+# =====================================================================
+# 9) ROUND-3 REVISION EXTRAS  (formerly the separate 5_revision_extras.py --
+#    merged into this script so that the whole pipeline lives in the four
+#    numbered scripts; the framework-figure generator stays a separate file)
+# =====================================================================
+def revision_extras(subs, mcols, path):
+    """Round-3 reviewer computations; writes Results/revision_extras.csv.
+
+    E1  matched transfer ratios: per-study own-error = parallel_lin, mass-loss metric,
+        harmonised (R=0.5) stress basis, LOGO by corrosion group, runouts excluded --
+        the same model family, metric, stress basis and specimen set as the transfer numerator.
+    E2  Jiang transfer row on the matched 18-record set (uncorroded reference row removed
+        everywhere: pool refit without it, held-out prediction on the 18).
+    E3  duplication audit, stratified: Razmkhah {S355} vs {S355 + S690 copies} and
+        {S235 pool} vs {+ S460 copies} (model 'none', native basis).
+    E4  Xue/Jiang uncleaned arm with JOINT duplicate folds (Xue group + Jiang counterpart
+        held out together) -- removes the leakage the reviewer suspected in the 0.136 LOGO.
+    E5  "750,97" sensitivity, three readings: censored 75,097 / point 75,097 / point 750,970.
+    E6  29-specimen aggregate for the refitted law (in-domain + out-of-domain); needs
+        Results/real_validation.csv (written by `python 3_train_models.py --realval`) --
+        skipped with a note when that file is absent.
+
+    Reads Results/reanalysis_transfer.csv (written earlier in the same run) for the E1
+    transfer numerators. Runs automatically at the end of main() in the default mode
+    (not with --include-all / --drop-runouts / --exclude-fn / --include-low-branch).
+    """
+    import pandas as pd
+    p = print
+    OUT = []
+    p('\n' + '=' * 90)
+    p('ROUND-3 REVISION EXTRAS (E1-E6; formerly the separate 5_revision_extras.py)')
+
+    # ------------------------------------------------------------------
+    # E1 matched transfer ratios
+    # ------------------------------------------------------------------
+    p('\n' + '=' * 90)
+    p('E1) MATCHED TRANSFER RATIOS (own error = parallel_lin, mass loss, harmonised R=0.5, LOGO by group, runouts excluded)')
+    metric = 'm_mass_loss'
+    keys = []
+    for k, rs in subs.items():
+        vals = [r['m'][metric] for r in rs if not math.isnan(r['m'].get(metric, float('nan')))]
+        if len(vals) < MIN_ROWS or (max(vals) - min(vals)) == 0:
+            continue
+        if any(math.isnan(r['S_h']) for r in rs if not math.isnan(r['m'].get(metric, float('nan')))):
+            continue
+        keys.append(k)
+    p('  studies in the harmonised mass-loss pool: %s' % ', '.join('%s %s' % k for k in keys))
+
+    # the transfer numerators come from the study-to-study transfer block written just above
+    tr = pd.read_csv(os.path.join(RESULTS_DIR, '%s_transfer.csv' % OUT_PREFIX))
+    trm = tr[(tr.kind == 'study_transfer') & (tr.metric == 'm_mass_loss') & (tr.normaliser == 'raw')]
+    trnum = {}
+    for _, r in trm.iterrows():
+        trnum[r['held_out']] = (r['n'], r['rmse'])
+
+    matched_rows = []
+    for k in keys:
+        tag = '%s %s' % k
+        if tag not in trnum:
+            continue
+        n_tr, rm_tr = trnum[tag]
+        # matched own error: this study alone, parallel, harmonised, LOGO by group, runouts excluded from scoring
+        rsm, y, x, m, w, g, c = arrays(subs[k], metric, 'raw', 'harmonised')
+        uu = ~c
+        lg = logo('parallel_lin', y[uu], x[uu], m[uu], w[uu], g[uu], c[uu])
+        own = lg['rmse']
+        ratio = rm_tr / own if own == own and own > 0 else float('nan')
+        p('  %-28s transfer n=%3d RMSE=%.3f | matched own LOGO n=%3d RMSE=%.3f | ratio %.2f' % (tag, n_tr, rm_tr, int(uu.sum()), own, ratio))
+        matched_rows.append(dict(kind='matched_transfer', study=tag, transfer_n=n_tr, transfer_rmse=rm_tr,
+                                 matched_own_n=int(uu.sum()), matched_own_logo=round(own, 4), matched_ratio=round(ratio, 2)))
+    ok = [r for r in matched_rows if r['matched_ratio'] == r['matched_ratio']]
+    vals = sorted(r['matched_ratio'] for r in ok)
+    p('  matched ratios: %s | median %.2f | range %.1f-%.1f' % (
+        ['%.2f' % v for v in vals], (vals[len(vals) // 2 - 1] + vals[len(vals) // 2]) / 2 if len(vals) % 2 == 0 else vals[len(vals) // 2],
+        min(vals), max(vals)))
+    OUT += matched_rows
+
+    # ------------------------------------------------------------------
+    # E2 Jiang transfer on matched 18-record subset
+    # ------------------------------------------------------------------
+    p('\n' + '=' * 90)
+    p('E2) BRIDGE-WIRE TRANSFER ROW WITH THE UNCORRODED ROW REMOVED (matched n=18)')
+    jk = ('Jiang2018', 'HSW-Jiang')
+    pool_keys = [k for k in keys]
+    rows_j = subs[jk]
+    p('  Jiang records in pool: %d (uncorroded J-0 rows: %d)' % (len(rows_j), sum(1 for r in rows_j if r['group'] == 'J-0')))
+    # rebuild pool without the uncorroded row of Jiang
+    subs2 = dict(subs)
+    rest_rows = []
+    for k in pool_keys:
+        rr = subs[k]
+        if k == jk:
+            rr = [r for r in rr if r['group'] != 'J-0']
+        rest_rows.append((k, rr))
+    pl = {'ys': [], 'xs': [], 'ms': [], 'ws': [], 'cs': [], 'gs': []}
+    for k, rr in rest_rows:
+        rsm, y, x, m, w, g, c = arrays(rr, metric, 'raw', 'harmonised')
+        if len(y) == 0:
+            continue
+        tagg = '%s|%s' % k
+        pl['ys'].append(y); pl['xs'].append(x); pl['ms'].append(m); pl['ws'].append(w); pl['cs'].append(c)
+        pl['gs'].append(np.array([tagg] * len(y)))
+    y = np.concatenate(pl['ys']); x = np.concatenate(pl['xs']); m = np.concatenate(pl['ms'])
+    w = np.concatenate(pl['ws']); c = np.concatenate(pl['cs']); g = np.concatenate(pl['gs'])
+    w = w / w.mean()
+    tag = '%s|%s' % jk
+    te = g == tag; tr_ = ~te
+    tu = te & ~c
+    f = fit_any(design('parallel_lin', m[tr_], x[tr_]), y[tr_], w[tr_] / w[tr_].mean(), c[tr_])
+    e = design('parallel_lin', m[tu], x[tu]) @ f['coef'] - y[tu]
+    rm = math.sqrt(float((e ** 2).mean()))
+    p('  transfer RMSE on n=%d (matched set): %.3f (shipped value on n=19: %.3f)' % (int(tu.sum()), rm, trnum.get('%s %s' % jk, (0, float('nan')))[1]))
+    OUT.append(dict(kind='jiang_matched_transfer', study='Jiang2018 HSW-Jiang', transfer_n=int(tu.sum()),
+                    transfer_rmse=round(rm, 4)))
+
+    # ------------------------------------------------------------------
+    # E3 stratified duplication audit (Razmkhah)
+    # ------------------------------------------------------------------
+    p('\n' + '=' * 90)
+    p('E3) STRATIFIED DUPLICATION AUDIT (Razmkhah, model none, native basis)')
+    clean_rows, _, _ = load_rows(path)
+    unclean_rows, _, _ = load_rows(path, restore_dup=True)
+    clean_subs = subsets(clean_rows)
+    unclean_subs = subsets(unclean_rows)
+
+    def audit_arm(label, keys_c, subs_c, keys_u, subs_u, model='none', metric=None):
+        for arm, ks, sd_ in (('cleaned', keys_c, subs_c), ('uncleaned', keys_u, subs_u)):
+            pl = _pool_arrays(sd_, ks, metric, 'raw', 'native', level='group')
+            if pl is None:
+                p('  %s %s: empty' % (label, arm)); continue
+            y, x, m, w, g, c = pl
+            f = fit_any(design(model, m, x), y, w, c)
+            si = SLOPE_IDX[model]
+            se = math.sqrt(max(f['s2'] * float(f['V'][si, si]), 0.0))
+            t = tq(f['df'])
+            hw = t * se
+            lg = logo(model, y, x, m, w, g, c)
+            p('  %-24s %-10s n=%3d (%2d censored, %d folds): slope %.2f +/-%.2f | sigma %.3f | LOGO %s' % (
+                label, arm, len(y), int(c.sum()), len(set(g)), f['coef'][si], hw, math.sqrt(f['s2']),
+                ('%.3f' % lg['rmse']) if lg['rmse'] == lg['rmse'] else 'n/a (<3 folds)'))
+            OUT.append(dict(kind='strat_audit', family=label, arm=arm, n=len(y), n_cens=int(c.sum()),
+                            slope=round(float(f['coef'][si]), 3), hw=round(hw, 3), sigma=round(math.sqrt(f['s2']), 4),
+                            logo=round(lg['rmse'], 4) if lg['rmse'] == lg['rmse'] else '',
+                            folds=len(set(g))))
+
+    s235 = tuple([('Razmkhah2023', 'S235-10mm'), ('Razmkhah2023', 'S235-8mm'), ('Razmkhah2023', 'S235-12mm'),
+                  ('Razmkhah2023', 'S235-15mm'), ('Razmkhah2023', 'S235-20mm')])
+    s355 = (('Razmkhah2023', 'S355-10mm'),)
+    s460 = (('Razmkhah2023', 'S460-10mm'),)
+    s690 = (('Razmkhah2023', 'S690-10mm'),)
+    audit_arm('S355-10mm', s355, clean_subs, s355 + s690, unclean_subs)
+    audit_arm('S235 pool', s235, clean_subs, s235 + s460, unclean_subs)
+
+    # ------------------------------------------------------------------
+    # E4 Xue/Jiang uncleaned arm with JOINT duplicate folds
+    # ------------------------------------------------------------------
+    p('\n' + '=' * 90)
+    p('E4) XUE/JIANG UNCLEANED AUDIT WITH JOINT DUPLICATE FOLDS (parallel_lin, mass loss, native)')
+    unc = unclean_subs
+    keys_u = [('Jiang2018', 'HSW-Jiang'), ('Xue2020', 'HSW-Xue')]
+    pl = _pool_arrays(unc, keys_u, 'm_mass_loss', 'raw', 'native', level='group')
+    y, x, m, w, g, c = pl
+    p('  uncleaned n=%d, groups=%d' % (len(y), len(set(g))))
+    # shipped (separate) folds:
+    lg_sep = logo('parallel_lin', y, x, m, w, g, c)
+    p('  separate folds (as shipped): LOGO = %.3f' % lg_sep['rmse'])
+    # joint folds: map Xue X-* group i to Jiang J-* group i
+    gmap = {'X-15d': 'J-A', 'X-30d': 'J-B', 'X-45d': 'J-C', 'X-60d': 'J-D', 'X-75d': 'J-E', 'X-90d': 'J-F'}
+    g2 = np.array([gg.split('|')[0] + '|' + (gmap.get(gg.split('|')[2], gg.split('|')[2])) if 'Xue' in gg else gg for gg in g])
+    lg_joint = logo('parallel_lin', y, x, m, w, g2, c)
+    p('  joint duplicate folds:        LOGO = %.3f' % lg_joint['rmse'])
+    # also joint folds + parallel arm details
+    f = fit_any(design('parallel_lin', m, x), y, w, c)
+    si = SLOPE_IDX['parallel_lin']
+    se = math.sqrt(max(f['s2'] * float(f['V'][si, si]), 0.0))
+    t = tq(f['df'])
+    p('  slope %.2f +/-%.2f | sigma %.3f' % (f['coef'][si], t * se, math.sqrt(f['s2'])))
+    OUT.append(dict(kind='joint_fold_audit', arm='uncleaned_separate', logo=round(lg_sep['rmse'], 4)))
+    OUT.append(dict(kind='joint_fold_audit', arm='uncleaned_joint', logo=round(lg_joint['rmse'], 4)))
+
+    # ------------------------------------------------------------------
+    # E5 "750,97" three readings
+    # ------------------------------------------------------------------
+    p('\n' + '=' * 90)
+    p('E5) AMBIGUOUS "750,97" RECORD: THREE READINGS (Q550E, rho_A, parallel_lin LOGO)')
+    amb = [r for r in pd.read_csv(path).to_dict('records') if str(r.get('exclude_reason', '')).startswith('ambiguous')]
+    p('  ambiguous rows: %s' % [(r['specimen'], r['S'], r['group']) for r in amb])
+    a0 = amb[0]
+    base_rm = {}
+    for mod in ['parallel_lin', 'none']:
+        rsm, y, x, m, w, g, c = arrays(subs[('Liu2021', 'Q550E')], 'm_rho_A', 'raw', 'native')
+        lg = logo(mod, y, x, m, w, g, c)
+        base_rm[mod] = lg['rmse']
+    p('  base (29 records): parallel LOGO = %.4f' % base_rm['parallel_lin'])
+    for label, N_val, as_runout in (('censored lower bound 75,097', 75097, True),
+                                    ('point 75,097', 75097, False),
+                                    ('point 750,970', 750970, False)):
+        # build the restored record in raw row form
+        row = dict(a0)
+        row['N'] = N_val
+        row['runout'] = '1' if as_runout else '0'
+        row['exclude_reason'] = ''
+        # restore = append to the Q550E subset (m_rho_A present)
+        rest = subs[('Liu2021', 'Q550E')]
+        r2 = dict(dataset='Liu2021', steel='Q550E', group=row['group'], specimen=row['specimen'],
+                  n_rep=_pos(_f(row['n_rep'])), S=_f(row['S']), S_h=to_range_at_R(_f(row['S']), row['stress_def'], _f(row['R']), _f(row['f_u'])),
+                  stress_def=row['stress_def'], R=_f(row['R']), N=N_val, cens=as_runout,
+                  f_u=_f(row['f_u']), f_y=_f(row.get('f_y')), footnote='', branch='',
+                  m={mc: _f(row.get(mc)) for mc in mcols})
+        rsm, y, x, m, w, g, c = arrays(rest + [r2], 'm_rho_A', 'raw', 'native')
+        lg = logo('parallel_lin', y, x, m, w, g, c)
+        p('  %-28s -> LOGO = %.4f' % (label, lg['rmse']))
+        OUT.append(dict(kind='ambiguous_check', variant=label, logo=round(lg['rmse'], 4)))
+
+    # ------------------------------------------------------------------
+    # E6 29-specimen aggregate
+    # ------------------------------------------------------------------
+    rv_path = os.path.join(RESULTS_DIR, 'real_validation.csv')
+    if os.path.exists(rv_path):
+        p('\n' + '=' * 90)
+        p('E6) LAW ON ALL 29 REAL SPECIMENS (in-domain + out-of-grid)')
+        rv = pd.read_csv(rv_path)
+        e = rv['law_pred'] - rv['log10N_real']
+        rm = float(np.sqrt((e ** 2).mean()))
+        w2 = int((np.abs(e) <= math.log10(2)).sum())
+        lo2, hi2 = wilson_ci(w2, len(e))
+        bias = float(e.mean())
+        p('  RMSE = %.3f | within x2 = %d/29 (%.1f%%; Wilson %.1f-%.1f%%) | bias (pred - obs) = %+.4f' % (
+            rm, w2, 100 * w2 / len(e), 100 * lo2, 100 * hi2, bias))
+        OUT.append(dict(kind='law_all29', rmse=round(rm, 4), within2=w2, n=len(e), wilson_lo=round(100 * lo2, 1),
+                        wilson_hi=round(100 * hi2, 1), bias=round(bias, 4)))
+    else:
+        p('\n(E6 skipped: Results/real_validation.csv not found -- run `python 3_train_models.py --realval` first;')
+        p(' the law_all29 row is then added to Results/revision_extras.csv on the next run of this script.)')
+
+    # ------------------------------------------------------------------
+    _ensure_dirs()
+    out_path = os.path.join(RESULTS_DIR, 'revision_extras.csv')
+    with open(out_path, 'w', newline='', encoding='utf-8') as fh:
+        keys_ = sorted({k for r in OUT for k in r})
+        w = csv.DictWriter(fh, fieldnames=keys_)
+        w.writeheader()
+        for r in OUT:
+            w.writerow({k: r.get(k, '') for k in keys_})
+    p('Saved: %s' % out_path)
 
 
 # =====================================================================
@@ -1767,6 +2031,8 @@ def main():
     write_csv('%s_duplication_inflation.csv' % OUT_PREFIX, dup_out)
     write_csv('%s_scarce_data.csv' % OUT_PREFIX, scarce_out)
     write_csv('%s_sensitivity.csv' % OUT_PREFIX, sens_out)
+    if not (include_all or exclude_fn or drop_ro or inc_low):
+        revision_extras(subs, mcols, path)
     if '--no-figs' not in argv:
         figures(subs, mcols, chosen)
         summary_figures(subs, mcols)

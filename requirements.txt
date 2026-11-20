@@ -1,28 +1,20 @@
-# Pinned versions verified to reproduce the manuscript's reported numbers
-# (the LOGO RMSE of the 9 cross-dataset systems, the ablation / prior-robustness /
-# real-validation results, and Figures 1-6 with the paper file names
-# fig_fem_verification, fig_sn_fits, fig_logo_pred_obs, fig_prior_robustness,
-# fig_real_validation, plus the Results CSVs) against
-# "corrosion fatigue data.csv" and liu_table4.csv.
-#
-# IMPORTANT: torch is required, not optional.
-# 3_train_models.py imports PyTorch at startup (for training and also for
-# --figs-only); without it the training steps and Figures 4-6 cannot be
-# produced. Install everything below before running the pipeline.
-#
-# IMPORTANT: scipy is required, not optional.
+# IMPORTANT: torch is required.
+# 3_train_models.py imports PyTorch at startup; install everything below before running the pipeline.
+#scipy is required, not optional.
 # 4_reanalysis.py uses it for the censored (Tobit) runs of the S-N fits;
-# without it runouts are dropped and the reported numbers will not match
-# the manuscript.
-#
+# pandas is required by the round-3 extras section of 4_reanalysis.py
 # Install with:
 #   pip install --break-system-packages -r requirements.txt
 #
 # NOTE: torch was verified with the CPU build from the PyTorch index:
 #   pip install torch==2.15.0 --index-url https://download.pytorch.org/whl/cpu
+#
+# OPTIONAL Install:
+#   pip install playwright  &&  playwright install chromium
 
 numpy==2.1.3
 scipy==1.14.1
 matplotlib==3.9.2
 torch==2.15.0
 openpyxl==3.1.5
+pandas==2.2.3
